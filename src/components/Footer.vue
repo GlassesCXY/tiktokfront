@@ -1,7 +1,7 @@
 <template>
     <view>
         <view class="tab-bar">
-            <view class="tab-bar-item">
+            <view class="tab-bar-item" @click="toRecommend">
                 <text class="tab-text">推荐</text>
             </view>
             <view class="tab-bar-item center-button" @click="toUpload">
@@ -26,10 +26,14 @@
     const toMine = async ()=>{
         const result = await isLogin();
         if(result.data.msg =="当前客户端是否登录：true"){
-            router.push('/myVideo');
+            router.push('/myVideos');
         }else{
             router.push('/login');
         }
+    }
+
+    const toRecommend = () =>{
+        router.push("/");
     }
 
     const toUpload = async ()=>{
@@ -46,7 +50,7 @@
 
 <style scoped>
 .tab-bar {
-    position: relative;
+    position: fixed;
     bottom: 0;
     left: 0;
     width: 100%;

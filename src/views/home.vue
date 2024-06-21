@@ -35,12 +35,29 @@
               </div>
           </van-swipe-item>
       </van-swipe>
+      <div class="heart-container" @click="toggleLike">
+          <svg
+              class="heart-icon"
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              :fill="isLiked ? 'red' : 'white'"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+          >
+              <path
+                  d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"
+              />
+          </svg>
+          <span class="like-count">{{ likeCount }}</span>
+      </div>
       <Footer/>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, onBeforeUnmount } from "vue";
+import {ref, onMounted, onBeforeUnmount, markRaw} from "vue";
 import { showToast, showNotify, showConfirmDialog } from "vant";
 import Footer from "@/components/Footer.vue";
 import {getRecommend} from "@/api/getRecommend.js";
@@ -48,30 +65,45 @@ import {getUrl} from "@/api/getUrl.js";
 import {view} from "@/api/view.js";
 import {isLogin} from "@/api/isLogin.js";
 import {useRouter} from "vue-router";
+import {getLikeCount} from "@/api/getLikes.js";
+import {getVideoLikedStatus} from "@/api/getLikeStatus.js";
+import {likeVideo} from "@/api/addLike.js";
+import {cancelLikeVideo} from "@/api/deleteLike.js";
 
 const player = ref(null);
 const currentIndex = ref(0);
 const playing = ref(true);
 const width = ref(window.innerWidth);
 const height = ref(window.innerHeight - 50);
-const likeCollect = ref([]);
-const startCollect = ref([]);
-const followUsers = ref([101]);
-const showBottomPopup = ref(false);
-const showShareSheet = ref(false);
 const noMoreFlag = ref(false);
 const commentList = ref([]);
-const likeCount = ref(Math.ceil(Math.random() * 10000));
 const starCount = ref(Math.ceil(Math.random() * 1000));
 const shareCount = ref(Math.ceil(Math.random() * 1000));
-const commentContent = ref("");
 const currentVideoInfo = ref({});
-const loading = ref(false);
-const finished = ref(false);
-const showPopover = ref(false);
-const tempObject = {};
 const router = useRouter();
 
+
+const isLiked = ref(false);
+const likeCount = ref(0); // 初始点赞数
+
+const toggleLike = async () => {
+    console.log(currentIndex.value);
+    console.log(videoList.value[currentIndex.value]);
+    if (!isLiked.value) {
+        const res = await likeVideo(videoList.value[currentIndex.value].vid);
+        if(res.data.code==200){
+            isLiked.value = !isLiked.value
+            likeCount.value = Number(likeCount.value)+1;
+        }
+
+    } else {
+        const res = await cancelLikeVideo(videoList.value[currentIndex.value].vid);
+        if(res.data.code==200){
+            isLiked.value = !isLiked.value
+            likeCount.value = Number(likeCount.value)-1;
+        }
+    }
+};
 
 /**
  * 切换视频
@@ -79,8 +111,8 @@ const router = useRouter();
 const onChange = async (index) => {
     console.log(index);
     console.log(videoList.value.length);
+    const vid1 = videoList.value[index].vid;
     if(index==videoList.value.length-1) {
-        const vid1 = videoList.value[index].vid;
         const viw1 = await view(vid1);
         const res2 = await getRecommend();
         const vid2 = res2.data.data;
@@ -101,6 +133,10 @@ const onChange = async (index) => {
     currentIndex.value = index;
     player.value = nextVideo;
     getVideoCount(videoList.value[index]);
+    const count = await getLikeCount(vid1);
+    likeCount.value = count.data.data.count;
+    const liked = await getVideoLikedStatus(vid1);
+    isLiked.value = liked.data.data.status;
     if (index == videoList.value.length - 1) {
         showNotify({ type: "danger", message: "没有更多了..." });
         noMoreFlag.value = true;
@@ -143,6 +179,10 @@ const videoInit = async () =>{
         const vid1 = res1.data.data;
         const url1 = await getUrl(vid1);
         const src1 = url1.data.data;
+        const count = await getLikeCount(vid1);
+        likeCount.value = count.data.data.count;
+        const liked = await getVideoLikedStatus(vid1);
+        isLiked.value = liked.data.data.status;
         videoList.value.push({
             vid:vid1,
             src:src1
@@ -312,24 +352,29 @@ const videoList = ref([]);
 ::v-deep .van-share-sheet__cancel:before {
     background-color: #f5f5f5;
 }
-.videoCommentList {
-    width: 100%;
-    height: 75%;
-    overflow: auto;
+
+.heart-container {
+    position: fixed;
+    top: 50%;
+    right: 10px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    cursor: pointer;
+    transform: translateY(-50%);
+    user-select: none;
 }
-.videoCommentUser {
-    margin-left: 8px;
-    overflow: hidden;
-    display: -webkit-box;
-    -webkit-line-clamp: 1;
-    -webkit-box-orient: vertical;
+
+.heart-icon {
+    width: 40px;
+    height: 40px;
+    transition: fill 0.3s;
 }
-.videoCommentContent {
-    font-size: 12px;
-    color: #656565;
-}
-.videoCommentTime{
-    font-size: 12px;
-    color: #9e9e9e;
+
+.like-count {
+    margin-top: 8px;
+    font-size: 14px;
+    color: #ffffff;
+
 }
 </style>

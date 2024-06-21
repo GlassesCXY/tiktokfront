@@ -1,14 +1,11 @@
-import axios from "./interceptors.js"
+import axios from './interceptors.js';
 
-export const getCode = (data) => {
-    const url = '/auth/sendRegisterCode'
+// 获取当前用户上传的视频，支持分页
+export const getMyVideo = (offset, limit) => {
+    const url = `/user/videos?offset=${offset}&limit=${limit}`;
     const config = {
-        method: 'post',
+        method: 'get',
         url: url,
-        data:data,
-        headers: {
-            'Content-Type': 'application/json',
-        }
-    }
-    return axios(config)
+    };
+    return axios(config);
 }
