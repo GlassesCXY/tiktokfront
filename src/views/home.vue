@@ -16,7 +16,7 @@
                           :id="'videoPlayer_' + index"
                           ref="player"
                           :key="index"
-                          :autoplay="true"
+                          :autoplay="false"
                           :controls="false"
                           :height="height"
                           :width="width"
